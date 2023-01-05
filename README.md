@@ -1,2 +1,2 @@
-# My solution to AOC 2022 (in python)
+# My solutions to AOC 2022 problems (in python)
 
