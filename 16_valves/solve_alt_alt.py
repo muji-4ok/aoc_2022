@@ -31,7 +31,7 @@ def compress_graph(flow_rate: dict[str, int], leads_to: dict[str, list[str]], st
     return new_flow_rate, dist_to, compute_dists(start, flow_rate, leads_to)
 
 
-with open('input.txt') as f:
+with open('sample_input.txt') as f:
     lines = f.read().split('\n')[:-2]
 
 flow_rate = {}
@@ -68,52 +68,34 @@ dist_to = tuple(tuple(dists[i] for i in range(len(dists))) for dists in dist_to)
 
 total_minutes = 26
 
-single_states = [set() for _ in range(total_minutes + 1)]
+states = [set() for _ in range(total_minutes + 1)]
 
 for name, dist in compressed_starts.items():
-    single_states[dist].add((valve_to_id[name], 0, 0))
+    states[dist].add((valve_to_id[name], 0, 0))
 
 for minute in range(0, total_minutes):
-    cur_states = single_states[minute]
+    cur_states = states[minute]
 
     if cur_states:
-        best_pressure = max(s[2] for s in cur_states)
+        best_pressure = max(s[2] for s in states[minute])
     else:
         best_pressure = 0
 
     print('minute =', minute, 'state count =', len(cur_states), 'best pressure =', best_pressure)
 
-    for cur_valve, opened_valves, pressure in cur_states:
+    for cur_valve, opened_valves, pressure in states[minute]:
         valve_mask = 1 << cur_valve
 
         if not (opened_valves & valve_mask):
             new_pressure = pressure + (total_minutes - minute - 1) * flow_rate[cur_valve]
-            single_states[minute + 1].add((cur_valve, opened_valves | valve_mask, new_pressure))
+            states[minute + 1].add((cur_valve, opened_valves | valve_mask, new_pressure))
 
         for next_valve, dist in enumerate(dist_to[cur_valve]):
             if dist == -1:
                 continue
 
             if minute + dist <= total_minutes:
-                single_states[minute + dist].add((next_valve, opened_valves, pressure))
+                states[minute + dist].add((next_valve, opened_valves, pressure))
 
-all_valves_mask = (1 << (len(valve_to_id) + 1)) - 1
-best_pressure = 0
-
-for cur_single_states in single_states:
-    states_per_open_valves = [[] for _ in range(all_valves_mask + 1)]
-
-    for state in cur_single_states:
-        opened_valves = state[1]
-        states_per_open_valves[opened_valves].append(state)
-
-    states_per_open_valves = [(mask, states) for mask, states in enumerate(states_per_open_valves) if states]
-    best_pressure_per_open_valves = [(mask, max(s[2] for s in states)) for mask, states in states_per_open_valves]
-
-    for first_opened_valves, first_pressure in best_pressure_per_open_valves:
-        for second_opened_valves, second_pressure in best_pressure_per_open_valves:
-            if not (first_opened_valves & second_opened_valves):
-                best_pressure = max(best_pressure, first_pressure + second_pressure)
-
-print(best_pressure)
+print(max(s[2] for s in states[total_minutes]))
 
